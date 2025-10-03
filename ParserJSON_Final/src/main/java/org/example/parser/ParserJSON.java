@@ -1,153 +1,199 @@
 package org.example.parser;
 
-import com.sun.tools.javac.Main;
 import jakarta.json.*;
 import org.example.modelo.Direccion;
 import org.example.modelo.Empleado;
 import org.example.modelo.Telefono;
 
+import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
 public class ParserJSON {
-    JsonReader reader = Json.createReader(Main.class.getResourceAsStream("/nuevo.json"));
-    JsonStructure structure;
+    private JsonStructure structure;
 
     public ParserJSON() {
-        structure = reader.read();
+        try {
+            // Cargar el archivo JSON desde resources
+            InputStream inputStream = getClass().getClassLoader().getResourceAsStream("nuevo.json");
+            if (inputStream != null) {
+                JsonReader reader = Json.createReader(inputStream);
+                structure = reader.read();
+                reader.close();
+                System.out.println("Archivo JSON cargado exitosamente");
+            } else {
+                // Si no existe el archivo, crear estructura básica
+                System.out.println("Archivo no encontrado, creando estructura vacía");
+                JsonObjectBuilder rootBuilder = Json.createObjectBuilder();
+                structure = rootBuilder.build();
+            }
+        } catch (Exception e) {
+            System.out.println("Error al cargar el archivo: " + e.getMessage());
+            // Crear estructura vacía en caso de error
+            JsonObjectBuilder rootBuilder = Json.createObjectBuilder();
+            structure = rootBuilder.build();
+        }
     }
 
+    // OPERACIÓN READ - Obtener todos los empleados
     public List<Empleado> obtenerEmpleados() {
         List<Empleado> empleados = new ArrayList<>();
-        JsonValue valores = structure.getValue("/");
-        JsonObject datos = valores.asJsonObject();
 
-        // Obtener todos los objetos que empiezan con "datos"
+        if (structure == null || structure.getValueType() != JsonValue.ValueType.OBJECT) {
+            return empleados;
+        }
+
+        JsonObject datos = (JsonObject) structure;
+
         for (String key : datos.keySet()) {
             if (key.startsWith("datos")) {
                 JsonObject empleadoData = datos.getJsonObject(key);
-                Empleado emp = new Empleado();
-                emp.setNombre(empleadoData.getString("firstName", ""));
-                emp.setApellido(empleadoData.getString("lastName", ""));
-                emp.setEdad(empleadoData.getInt("age", 0));
-
-                JsonObject address = empleadoData.getJsonObject("address");
-                if (address != null) {
-                    emp.setDir(obtenerDir(address));
+                Empleado emp = crearEmpleadoDesdeJson(empleadoData);
+                if (emp != null) {
+                    empleados.add(emp);
                 }
-
-                JsonArray phones = empleadoData.getJsonArray("phoneNumbers");
-                if (phones != null) {
-                    emp.setTelefonos(obtenerTelefonos(phones));
-                }
-
-                empleados.add(emp);
             }
         }
         return empleados;
     }
 
-    public void agregarEmpleado(Empleado em) {
-        String nuevoId = "datos" + (obtenerCantidadEmpleados() + 1);
+    // OPERACIÓN CREATE - Agregar nuevo empleado
+    public boolean agregarEmpleado(Empleado em) {
+        try {
+            String nuevoId = generarNuevoId();
+            JsonObject empleadoJson = construirJsonEmpleado(em);
+            JsonPointer pointer = Json.createPointer("/" + nuevoId);
 
+            structure = pointer.add(structure, empleadoJson);
+            System.out.println("Empleado agregado con ID: " + nuevoId);
+            return true;
+        } catch (Exception e) {
+            System.out.println("Error al agregar empleado: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // OPERACIÓN UPDATE - Actualizar empleado existente
+    public boolean actualizarEmpleado(String idEmpleado, Empleado empleadoActualizado) {
+        try {
+            JsonPointer pointer = Json.createPointer("/" + idEmpleado);
+
+            if (!pointer.containsValue(structure)) {
+                System.out.println("Empleado con ID " + idEmpleado + " no encontrado");
+                return false;
+            }
+
+            JsonObject empleadoJson = construirJsonEmpleado(empleadoActualizado);
+            structure = pointer.replace(structure, empleadoJson);
+            System.out.println("Empleado " + idEmpleado + " actualizado exitosamente");
+            return true;
+        } catch (Exception e) {
+            System.out.println("Error al actualizar empleado: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // OPERACIÓN DELETE - Eliminar empleado
+    public boolean borrarEmpleado(String idEmpleado) {
+        try {
+            JsonPointer pointer = Json.createPointer("/" + idEmpleado);
+
+            if (!pointer.containsValue(structure)) {
+                System.out.println("Empleado con ID " + idEmpleado + " no encontrado");
+                return false;
+            }
+
+            structure = pointer.remove(structure);
+            System.out.println("Empleado " + idEmpleado + " eliminado exitosamente");
+            return true;
+        } catch (Exception e) {
+            System.out.println("Error al eliminar empleado: " + e.getMessage());
+            return false;
+        }
+    }
+
+    // Métodos auxiliares privados
+    private Empleado crearEmpleadoDesdeJson(JsonObject empleadoData) {
+        try {
+            Empleado emp = new Empleado();
+            emp.setNombre(empleadoData.getString("firstName", ""));
+            emp.setApellido(empleadoData.getString("lastName", ""));
+            emp.setEdad(empleadoData.getInt("age", 0));
+
+            JsonObject address = empleadoData.getJsonObject("address");
+            if (address != null) {
+                emp.setDir(obtenerDir(address));
+            }
+
+            JsonArray phones = empleadoData.getJsonArray("phoneNumbers");
+            if (phones != null) {
+                emp.setTelefonos(obtenerTelefonos(phones));
+            }
+
+            return emp;
+        } catch (Exception e) {
+            System.out.println("Error al crear empleado desde JSON: " + e.getMessage());
+            return null;
+        }
+    }
+
+    private JsonObject construirJsonEmpleado(Empleado em) {
         JsonObjectBuilder empleadoBuilder = Json.createObjectBuilder()
                 .add("firstName", em.getNombre())
                 .add("lastName", em.getApellido())
                 .add("age", em.getEdad());
 
         // Construir dirección
-        JsonObjectBuilder dirBuilder = Json.createObjectBuilder()
-                .add("streetAddress", em.getDir().getCalle())
-                .add("city", em.getDir().getCiudad())
-                .add("state", em.getDir().getEstado())
-                .add("postalCode", em.getDir().getCp());
-
-        empleadoBuilder.add("address", dirBuilder);
+        if (em.getDir() != null) {
+            JsonObjectBuilder dirBuilder = Json.createObjectBuilder()
+                    .add("streetAddress", em.getDir().getCalle())
+                    .add("city", em.getDir().getCiudad())
+                    .add("state", em.getDir().getEstado())
+                    .add("postalCode", em.getDir().getCp());
+            empleadoBuilder.add("address", dirBuilder);
+        }
 
         // Construir teléfonos
-        JsonArrayBuilder arrayTelefonos = Json.createArrayBuilder();
-        for (Telefono telefono : em.getTelefonos()) {
-            JsonObjectBuilder telBuilder = Json.createObjectBuilder()
-                    .add("type", telefono.getTipo())
-                    .add("number", telefono.getNumero());
-            arrayTelefonos.add(telBuilder);
+        if (em.getTelefonos() != null && !em.getTelefonos().isEmpty()) {
+            JsonArrayBuilder arrayTelefonos = Json.createArrayBuilder();
+            for (Telefono telefono : em.getTelefonos()) {
+                JsonObjectBuilder telBuilder = Json.createObjectBuilder()
+                        .add("type", telefono.getTipo())
+                        .add("number", telefono.getNumero());
+                arrayTelefonos.add(telBuilder);
+            }
+            empleadoBuilder.add("phoneNumbers", arrayTelefonos);
         }
 
-        empleadoBuilder.add("phoneNumbers", arrayTelefonos);
-
-        JsonPointer pointer = Json.createPointer("/" + nuevoId);
-        structure = pointer.add(structure, empleadoBuilder.build());
+        return empleadoBuilder.build();
     }
 
-    public boolean actualizarEmpleado(String idEmpleado, Empleado empleadoActualizado) {
-        JsonPointer pointer = Json.createPointer("/" + idEmpleado);
-
-        if (!pointer.containsValue(structure)) {
-            return false; // El empleado no existe
-        }
-
-        JsonObjectBuilder empleadoBuilder = Json.createObjectBuilder()
-                .add("firstName", empleadoActualizado.getNombre())
-                .add("lastName", empleadoActualizado.getApellido())
-                .add("age", empleadoActualizado.getEdad());
-
-        // Construir dirección actualizada
-        JsonObjectBuilder dirBuilder = Json.createObjectBuilder()
-                .add("streetAddress", empleadoActualizado.getDir().getCalle())
-                .add("city", empleadoActualizado.getDir().getCiudad())
-                .add("state", empleadoActualizado.getDir().getEstado())
-                .add("postalCode", empleadoActualizado.getDir().getCp());
-
-        empleadoBuilder.add("address", dirBuilder);
-
-        // Construir teléfonos actualizados
-        JsonArrayBuilder arrayTelefonos = Json.createArrayBuilder();
-        for (Telefono telefono : empleadoActualizado.getTelefonos()) {
-            JsonObjectBuilder telBuilder = Json.createObjectBuilder()
-                    .add("type", telefono.getTipo())
-                    .add("number", telefono.getNumero());
-            arrayTelefonos.add(telBuilder);
-        }
-
-        empleadoBuilder.add("phoneNumbers", arrayTelefonos);
-
-        // Reemplazar el empleado existente
-        structure = pointer.replace(structure, empleadoBuilder.build());
-        return true;
-    }
-
-    public boolean borrarEmpleado(String idEmpleado) {
-        JsonPointer pointer = Json.createPointer("/" + idEmpleado);
-
-        if (!pointer.containsValue(structure)) {
-            return false; // El empleado no existe
-        }
-
-        structure = pointer.remove(structure);
-        return true;
-    }
-
-    // Método auxiliar para obtener cantidad de empleados
-    private int obtenerCantidadEmpleados() {
-        JsonValue valores = structure.getValue("/");
-        JsonObject datos = valores.asJsonObject();
-        int count = 0;
-
-        for (String key : datos.keySet()) {
-            if (key.startsWith("datos")) {
-                count++;
+    private String generarNuevoId() {
+        int maxId = 0;
+        if (structure.getValueType() == JsonValue.ValueType.OBJECT) {
+            JsonObject datos = (JsonObject) structure;
+            for (String key : datos.keySet()) {
+                if (key.startsWith("datos")) {
+                    try {
+                        int idNum = Integer.parseInt(key.substring(5));
+                        if (idNum > maxId) {
+                            maxId = idNum;
+                        }
+                    } catch (NumberFormatException e) {
+                        // Ignorar claves que no siguen el formato esperado
+                    }
+                }
             }
         }
-        return count;
+        return "datos" + (maxId + 1);
     }
 
-    // Métodos auxiliares maestraDiana
     private Direccion obtenerDir(JsonObject direccion) {
         Direccion dire = new Direccion();
-        dire.setCalle(direccion.getString("streetAddress"));
-        dire.setCiudad(direccion.getString("city"));
-        dire.setEstado(direccion.getString("state"));
-        dire.setCp(direccion.getInt("postalCode"));
+        dire.setCalle(direccion.getString("streetAddress", ""));
+        dire.setCiudad(direccion.getString("city", ""));
+        dire.setEstado(direccion.getString("state", ""));
+        dire.setCp(direccion.getInt("postalCode", 0));
         return dire;
     }
 
@@ -156,40 +202,65 @@ public class ParserJSON {
         for (int i = 0; i < telefonos.size(); i++) {
             JsonObject jsonTelefono = telefonos.getJsonObject(i);
             Telefono telefono = new Telefono();
-            telefono.setTipo(jsonTelefono.getString("type"));
-            telefono.setNumero(jsonTelefono.getString("number"));
+            telefono.setTipo(jsonTelefono.getString("type", ""));
+            telefono.setNumero(jsonTelefono.getString("number", ""));
             telefonoList.add(telefono);
         }
         return telefonoList;
     }
 
-    public void contenido() {
-        // Método existente sin cambios
-        JsonValue valores = structure.getValue("");
-        JsonObject objeto = (JsonObject) valores;
-        for(String e : objeto.keySet()) {
-            System.out.println("=== " + e + " ===");
-            JsonObject valore = (JsonObject) objeto.getValue("/" + e);
-            for(String v : valore.keySet()) {
-                System.out.println(v + ":");
-                if (valore.get(v).getValueType() == JsonValue.ValueType.ARRAY) {
-                    JsonArray array = (JsonArray) valore.getJsonArray(v);
-                    for(JsonValue j : array){
-                        JsonObject obj = (JsonObject) j;
-                        for (String k : obj.keySet()) {
-                            System.out.println("  " + k + ": " + obj.get(k));
-                        }
-                    }
-                } else if (valore.get(v).getValueType() == JsonValue.ValueType.OBJECT) {
-                    JsonObject objeto1 = (JsonObject) valore.get(v);
-                    for(String e1 : objeto1.keySet()) {
-                        System.out.println("  " + e1 + ": " + objeto1.get(e1));
-                    }
-                } else {
-                    System.out.println("  " + valore.get(v));
-                }
-            }
-            System.out.println();
+    public void mostrarContenido() {
+        System.out.println("=== CONTENIDO ACTUAL DEL SISTEMA ===");
+
+        if (structure == null || structure.getValueType() != JsonValue.ValueType.OBJECT) {
+            System.out.println("No hay datos en el sistema");
+            return;
         }
+
+        JsonObject datos = (JsonObject) structure;
+
+        if (datos.isEmpty()) {
+            System.out.println("El sistema está vacío");
+            return;
+        }
+
+        for (String key : datos.keySet()) {
+            System.out.println("\n--- " + key + " ---");
+            JsonObject empleadoData = datos.getJsonObject(key);
+            mostrarEmpleado(empleadoData);
+        }
+    }
+
+    private void mostrarEmpleado(JsonObject empleadoData) {
+        System.out.println("Nombre: " + empleadoData.getString("firstName", "N/A") +
+                " " + empleadoData.getString("lastName", "N/A"));
+        System.out.println("Edad: " + empleadoData.getInt("age", 0));
+
+        JsonObject address = empleadoData.getJsonObject("address");
+        if (address != null) {
+            System.out.println("Dirección:");
+            System.out.println("  Calle: " + address.getString("streetAddress", "N/A"));
+            System.out.println("  Ciudad: " + address.getString("city", "N/A"));
+            System.out.println("  Estado: " + address.getString("state", "N/A"));
+            System.out.println("  CP: " + address.getInt("postalCode", 0));
+        }
+
+        JsonArray phones = empleadoData.getJsonArray("phoneNumbers");
+        if (phones != null) {
+            System.out.println("Teléfonos:");
+            for (int i = 0; i < phones.size(); i++) {
+                JsonObject phone = phones.getJsonObject(i);
+                System.out.println("  " + phone.getString("type", "N/A") + ": " +
+                        phone.getString("number", "N/A"));
+            }
+        }
+    }
+
+    // Método para obtener el contenido JSON como string (para debugging)
+    public String obtenerJsonComoString() {
+        if (structure != null) {
+            return structure.toString();
+        }
+        return "{}";
     }
 }

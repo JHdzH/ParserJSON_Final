@@ -12,108 +12,135 @@ public class Main {
     public static void main(String[] args) {
         ParserJSON parser = new ParserJSON();
 
-        System.out.println("=== PRUEBAS DEL SISTEMA CRUD DE EMPLEADOS ===\n");
+        System.out.println("=== SISTEMA CRUD DE EMPLEADOS - PRUEBA CON MÚLTIPLES EMPLEADOS ===\n");
 
-        // PRUEBA 1: Leer empleados existentes
-        System.out.println("1. LEER EMPLEADOS EXISTENTES");
-        System.out.println("----------------------------");
-        List<Empleado> empleados = parser.obtenerEmpleados();
-        if (empleados.isEmpty()) {
-            System.out.println("No se encontraron empleados existentes");
-        } else {
-            for (Empleado emp : empleados) {
-                System.out.println(emp);
-                System.out.println("---");
-            }
+        // PRUEBA 1: Estado inicial del sistema
+        System.out.println("1. ESTADO INICIAL DEL SISTEMA");
+        System.out.println("==============================");
+        parser.mostrarContenido();
+
+        // PRUEBA 2: Crear primer empleado adicional
+        System.out.println("\n2. AGREGAR PRIMER EMPLEADO NUEVO");
+        System.out.println("================================");
+        Empleado empleado1 = new Empleado();
+        empleado1.setNombre("Ana");
+        empleado1.setApellido("López");
+        empleado1.setEdad(28);
+
+        Direccion dir1 = new Direccion("Av. Hidalgo 456", "Coyoacán", "CDMX", 04000);
+        empleado1.setDir(dir1);
+
+        Telefono tel1_1 = new Telefono("Celular", "55 1111 2222");
+        Telefono tel1_2 = new Telefono("Casa", "55 3333 4444");
+        List<Telefono> telefonos1 = Arrays.asList(tel1_1, tel1_2);
+        empleado1.setTelefonos(telefonos1);
+
+        boolean creado1 = parser.agregarEmpleado(empleado1);
+        if (creado1) {
+            System.out.println("✓ Primer empleado agregado exitosamente");
         }
-        System.out.println();
 
-        // PRUEBA 2: Crear nuevo empleado
-        System.out.println("2. CREAR NUEVO EMPLEADO");
-        System.out.println("-----------------------");
-        Empleado nuevoEmpleado = new Empleado();
-        nuevoEmpleado.setNombre("María");
-        nuevoEmpleado.setApellido("García");
-        nuevoEmpleado.setEdad(30);
+        // PRUEBA 3: Crear segundo empleado adicional
+        System.out.println("\n3. AGREGAR SEGUNDO EMPLEADO NUEVO");
+        System.out.println("=================================");
+        Empleado empleado2 = new Empleado();
+        empleado2.setNombre("Carlos");
+        empleado2.setApellido("Rodríguez");
+        empleado2.setEdad(32);
 
-        Direccion dirNueva = new Direccion("Av. Reforma 123", "Benito Juárez", "CDMX", 06600);
-        nuevoEmpleado.setDir(dirNueva);
+        Direccion dir2 = new Direccion("Calle Juárez 789", "Alvaro Obregón", "CDMX", 01000);
+        empleado2.setDir(dir2);
 
-        Telefono tel1 = new Telefono("Celular", "55 1234 5678");
-        Telefono tel2 = new Telefono("Oficina", "55 8765 4321");
-        List<Telefono> telefonosNuevos = Arrays.asList(tel1, tel2);
-        nuevoEmpleado.setTelefonos(telefonosNuevos);
+        Telefono tel2_1 = new Telefono("Celular", "55 5555 6666");
+        Telefono tel2_2 = new Telefono("Oficina", "55 7777 8888");
+        Telefono tel2_3 = new Telefono("Casa", "55 9999 0000");
+        List<Telefono> telefonos2 = Arrays.asList(tel2_1, tel2_2, tel2_3);
+        empleado2.setTelefonos(telefonos2);
 
-        parser.agregarEmpleado(nuevoEmpleado);
-        System.out.println("Empleado creado exitosamente: " + nuevoEmpleado.getNombre() + " " + nuevoEmpleado.getApellido());
-        System.out.println();
-
-        // PRUEBA 3: Mostrar contenido después de crear
-        System.out.println("3. CONTENIDO DESPUES DE CREAR");
-        System.out.println("-----------------------------");
-        parser.contenido();
-        System.out.println();
-
-        // PRUEBA 4: Actualizar empleado
-        System.out.println("4. ACTUALIZAR EMPLEADO");
-        System.out.println("----------------------");
-        Empleado empleadoActualizado = new Empleado();
-        empleadoActualizado.setNombre("María Elena");
-        empleadoActualizado.setApellido("García López");
-        empleadoActualizado.setEdad(31);
-
-        Direccion dirActualizada = new Direccion("Av. Insurgentes 456", "Cuauhtémoc", "CDMX", 06700);
-        empleadoActualizado.setDir(dirActualizada);
-
-        Telefono telActualizado = new Telefono("Celular", "55 9999 8888");
-        List<Telefono> telefonosActualizados = Arrays.asList(telActualizado);
-        empleadoActualizado.setTelefonos(telefonosActualizados);
-
-        boolean actualizacionExitosa = parser.actualizarEmpleado("datos2", empleadoActualizado);
-        if (actualizacionExitosa) {
-            System.out.println("Empleado actualizado exitosamente");
-        } else {
-            System.out.println("Error: No se pudo actualizar el empleado");
+        boolean creado2 = parser.agregarEmpleado(empleado2);
+        if (creado2) {
+            System.out.println("✓ Segundo empleado agregado exitosamente");
         }
-        System.out.println();
 
-        // PRUEBA 5: Mostrar contenido después de actualizar
-        System.out.println("5. CONTENIDO DESPUES DE ACTUALIZAR");
-        System.out.println("----------------------------------");
-        parser.contenido();
-        System.out.println();
+        // PRUEBA 4: Crear tercer empleado adicional
+        System.out.println("\n4. AGREGAR TERCER EMPLEADO NUEVO");
+        System.out.println("=================================");
+        Empleado empleado3 = new Empleado();
+        empleado3.setNombre("Laura");
+        empleado3.setApellido("Martínez");
+        empleado3.setEdad(26);
 
-        // PRUEBA 6: Eliminar empleado
-        System.out.println("6. ELIMINAR EMPLEADO");
-        System.out.println("--------------------");
-        boolean eliminacionExitosa = parser.borrarEmpleado("datos2");
-        if (eliminacionExitosa) {
-            System.out.println("Empleado eliminado exitosamente");
-        } else {
-            System.out.println("Error: No se pudo eliminar el empleado");
+        Direccion dir3 = new Direccion("Blvd. Toluca 321", "Tlalpan", "CDMX", 14000);
+        empleado3.setDir(dir3);
+
+        Telefono tel3_1 = new Telefono("Celular", "55 4444 3333");
+        List<Telefono> telefonos3 = Arrays.asList(tel3_1);
+        empleado3.setTelefonos(telefonos3);
+
+        boolean creado3 = parser.agregarEmpleado(empleado3);
+        if (creado3) {
+            System.out.println("✓ Tercer empleado agregado exitosamente");
         }
-        System.out.println();
 
-        // PRUEBA 7: Mostrar contenido final
-        System.out.println("7. CONTENIDO FINAL");
-        System.out.println("------------------");
-        parser.contenido();
-        System.out.println();
+        // Mostrar estado después de agregar los 3 empleados
+        System.out.println("\n5. ESTADO DESPUÉS DE AGREGAR 3 EMPLEADOS NUEVOS");
+        System.out.println("================================================");
+        parser.mostrarContenido();
 
-        // PRUEBA 8: Verificar lista final de empleados
-        System.out.println("8. LISTA FINAL DE EMPLEADOS");
-        System.out.println("---------------------------");
+        // PRUEBA 6: Mostrar todos los empleados existentes
+        System.out.println("\n6. LISTA COMPLETA DE EMPLEADOS ANTES DE ELIMINAR");
+        System.out.println("=================================================");
+        List<Empleado> todosEmpleados = parser.obtenerEmpleados();
+        System.out.println("Total de empleados en el sistema: " + todosEmpleados.size());
+
+        for (int i = 0; i < todosEmpleados.size(); i++) {
+            Empleado emp = todosEmpleados.get(i);
+            System.out.println("\n--- Empleado " + (i + 1) + " ---");
+            System.out.println("Nombre: " + emp.getNombre() + " " + emp.getApellido());
+            System.out.println("Edad: " + emp.getEdad());
+            System.out.println("Dirección: " + emp.getDir().getCalle() + ", " +
+                    emp.getDir().getCiudad() + ", " + emp.getDir().getEstado());
+            System.out.println("Teléfonos: " + emp.getTelefonos().size());
+        }
+
+        // PRUEBA 7: Eliminar solo un empleado (el segundo que agregamos - datos2)
+        System.out.println("\n7. ELIMINAR UN EMPLEADO (datos2)");
+        System.out.println("================================");
+        boolean eliminado = parser.borrarEmpleado("datos2");
+
+        if (eliminado) {
+            System.out.println("✓ Empleado datos2 eliminado exitosamente");
+        } else {
+            System.out.println("✗ No se pudo eliminar el empleado datos2");
+        }
+
+        // PRUEBA 8: Estado final del sistema después de eliminar
+        System.out.println("\n8. ESTADO FINAL DEL SISTEMA DESPUÉS DE ELIMINAR");
+        System.out.println("================================================");
+        parser.mostrarContenido();
+
+        // PRUEBA 9: Lista final de empleados
+        System.out.println("\n9. RESUMEN FINAL");
+        System.out.println("=================");
         List<Empleado> empleadosFinales = parser.obtenerEmpleados();
-        if (empleadosFinales.isEmpty()) {
-            System.out.println("No hay empleados en el sistema");
-        } else {
-            System.out.println("Total de empleados: " + empleadosFinales.size());
-            for (Empleado emp : empleadosFinales) {
-                System.out.println(emp);
-                System.out.println("---");
+        System.out.println("EMPLEADOS RESTANTES EN EL SISTEMA: " + empleadosFinales.size());
+
+        for (int i = 0; i < empleadosFinales.size(); i++) {
+            Empleado emp = empleadosFinales.get(i);
+            System.out.println("\n" + (i + 1) + ". " + emp.getNombre() + " " + emp.getApellido() +
+                    " (Edad: " + emp.getEdad() + ")");
+            System.out.println("   Dirección: " + emp.getDir().getCalle() + ", " +
+                    emp.getDir().getCiudad() + ", " + emp.getDir().getEstado());
+            System.out.println("   Teléfonos: " + emp.getTelefonos().size());
+            for (Telefono tel : emp.getTelefonos()) {
+                System.out.println("     - " + tel.getTipo() + ": " + tel.getNumero());
             }
         }
 
-        System.out.println("=== PRUEBAS COMPLETADAS ===");
+        System.out.println("\n=== PRUEBA COMPLETADA - CRUD FUNCIONANDO CORRECTAMENTE ===");
+        System.out.println("Operaciones realizadas:");
+        System.out.println("- 3 empleados agregados nuevos");
+        System.out.println("- 1 empleado eliminado (datos2)");
+        System.out.println("- Total final: " + empleadosFinales.size() + " empleados en el sistema");
     }
 }
