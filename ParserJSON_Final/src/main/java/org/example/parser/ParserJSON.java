@@ -263,4 +263,17 @@ public class ParserJSON {
         }
         return "{}";
     }
+
+    public String obtenerJSONComoString() {
+        try {
+            java.io.StringWriter stWriter = new java.io.StringWriter();
+            jakarta.json.JsonWriter jsonWriter = jakarta.json.Json.createWriter(stWriter);
+            jsonWriter.write(structure);
+            jsonWriter.close();
+            return stWriter.toString();
+        } catch (Exception e) {
+            return "Error al convertir JSON: " + e.getMessage();
+        }
+    }
+
 }

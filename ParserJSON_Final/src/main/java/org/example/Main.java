@@ -18,6 +18,7 @@ public class Main {
         System.out.println("1. ESTADO INICIAL DEL SISTEMA");
         System.out.println("==============================");
         parser.mostrarContenido();
+        mostrarJSONEnConsola(parser, "JSON inicial:");
 
         // PRUEBA 2: Crear primer empleado adicional
         System.out.println("\n2. AGREGAR PRIMER EMPLEADO NUEVO");
@@ -39,6 +40,7 @@ public class Main {
         if (creado1) {
             System.out.println("✓ Primer empleado agregado exitosamente");
         }
+        mostrarJSONEnConsola(parser, "JSON después de agregar primer empleado:");
 
         // PRUEBA 3: Crear segundo empleado adicional
         System.out.println("\n3. AGREGAR SEGUNDO EMPLEADO NUEVO");
@@ -61,6 +63,7 @@ public class Main {
         if (creado2) {
             System.out.println("✓ Segundo empleado agregado exitosamente");
         }
+        mostrarJSONEnConsola(parser, "JSON después de agregar segundo empleado:");
 
         // PRUEBA 4: Crear tercer empleado adicional
         System.out.println("\n4. AGREGAR TERCER EMPLEADO NUEVO");
@@ -86,6 +89,7 @@ public class Main {
         System.out.println("\n5. ESTADO DESPUÉS DE AGREGAR 3 EMPLEADOS NUEVOS");
         System.out.println("================================================");
         parser.mostrarContenido();
+        mostrarJSONEnConsola(parser, "JSON después de agregar 3 empleados:");
 
         // PRUEBA 6: Mostrar todos los empleados existentes
         System.out.println("\n6. LISTA COMPLETA DE EMPLEADOS ANTES DE ELIMINAR");
@@ -113,11 +117,13 @@ public class Main {
         } else {
             System.out.println("✗ No se pudo eliminar el empleado datos2");
         }
+        mostrarJSONEnConsola(parser, "JSON después de eliminar datos2:");
 
         // PRUEBA 8: Estado final del sistema después de eliminar
         System.out.println("\n8. ESTADO FINAL DEL SISTEMA DESPUÉS DE ELIMINAR");
         System.out.println("================================================");
         parser.mostrarContenido();
+        mostrarJSONEnConsola(parser, "JSON final:");
 
         // PRUEBA 9: Lista final de empleados
         System.out.println("\n9. RESUMEN FINAL");
@@ -142,5 +148,34 @@ public class Main {
         System.out.println("- 3 empleados agregados nuevos");
         System.out.println("- 1 empleado eliminado (datos2)");
         System.out.println("- Total final: " + empleadosFinales.size() + " empleados en el sistema");
+    }
+
+    // Método para mostrar el JSON en consola usando StringWriter y JsonWriter
+    private static void mostrarJSONEnConsola(ParserJSON parser, String mensaje) {
+        try {
+            // Usamos reflexión para acceder a la estructura JSON interna
+            var field = parser.getClass().getDeclaredField("structure");
+            field.setAccessible(true);
+            var structure = field.get(parser);
+
+            System.out.println("\n" + mensaje);
+            java.io.StringWriter stWriter = new java.io.StringWriter();
+            jakarta.json.JsonWriter jsonWriter = jakarta.json.Json.createWriter(stWriter);
+
+            if (structure instanceof jakarta.json.JsonObject) {
+                jsonWriter.writeObject((jakarta.json.JsonObject) structure);
+            } else if (structure instanceof jakarta.json.JsonArray) {
+                jsonWriter.writeArray((jakarta.json.JsonArray) structure);
+            } else {
+                jsonWriter.write((jakarta.json.JsonStructure) structure);
+            }
+
+            jsonWriter.close();
+            String jsonData = stWriter.toString();
+            System.out.println(jsonData);
+
+        } catch (Exception e) {
+            System.out.println("Error al mostrar JSON: " + e.getMessage());
+        }
     }
 }
